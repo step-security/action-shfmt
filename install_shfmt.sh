@@ -65,6 +65,15 @@ execute() {
   TMPDIR=$(mktemp -d)
   log_info "downloading from ${TARBALL_URL}"
   http_download "${TMPDIR}/${NAME}" "$TARBALL_URL"
+
+  # Download and verify checksum
+  CHECKSUM_URL="${GITHUB_DOWNLOAD}/${TAG}/sha256sums.txt"
+  log_info "downloading checksums from ${CHECKSUM_URL}"
+  http_download "${TMPDIR}/sha256sums.txt" "$CHECKSUM_URL"
+
+  log_info "verifying checksum for ${NAME}"
+  hash_sha256_verify "${TMPDIR}/${NAME}" "${TMPDIR}/sha256sums.txt"
+
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   install "${TMPDIR}/${NAME}" "${BINDIR}/${BINARY}"
   log_info "installed ${BINDIR}/${BINARY}"
@@ -148,7 +157,7 @@ uname_arch() {
     armv6*) arch="armv6" ;;
     armv7*) arch="armv7" ;;
   esac
-  echo ${arch}
+  echo "${arch}"
 }
 uname_os_check() {
   os=$(uname_os)
