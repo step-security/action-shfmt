@@ -1,0 +1,17 @@
+name: Test
+on:
+  pull_request:
+jobs:
+  test-pr-review:
+    name: runner / shfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./
+        continue-on-error: true
+        with:
+          filter_mode: file
+          reviewdog_flags: -fail-on-error
+      - name: check the exit code
+        if: ${{ !success() }}
+        run: echo 'The previous step should fail' && exit 1
