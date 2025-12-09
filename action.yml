@@ -36,7 +36,7 @@ runs:
       shell: bash
       env:
         INPUT_SHFMT_FLAGS: ${{ inputs.shfmt_flags }}
-    - uses: step-security/action-suggester@release
+    - uses: step-security/action-suggester@d16c142fd268a10f313e7580fd4d2480487fc2cf #v1.24.0
       with:
         tool_name: shfmt
         github_token: ${{ inputs.github_token }}
