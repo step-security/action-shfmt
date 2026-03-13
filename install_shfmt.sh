@@ -280,10 +280,13 @@ github_asset_digest() {
   tag=$2
   asset_name=$3
   api_url="https://api.github.com/repos/${owner_repo}/releases/tags/${tag}"
-  json=$(http_copy "$api_url" "Accept:application/vnd.github+json")
-  test -z "$json" && return 1
-  digest=$(echo "$json" | jq -r ".assets[] | select(.name == \"${asset_name}\") | .digest // empty" 2>/dev/null | sed 's/^sha256://')
-  test -z "$digest" && return 1
+  tmpfile=$(mktemp)
+  http_download "$tmpfile" "$api_url" "Accept:application/vnd.github+json" || { rm -f "$tmpfile"; return 1; }
+  digest=$(jq -r ".assets[] | select(.name == \"${asset_name}\") | .digest // empty" "$tmpfile" 2>/dev/null | sed 's/^sha256://')
+  rm -f "$tmpfile"
+  if [ -z "$digest" ]; then
+    return 1
+  fi
   echo "$digest"
 }
 hash_sha256() {
