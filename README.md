@@ -1,4 +1,5 @@
 # action-shfmt
+[![StepSecurity Maintained Action](https://raw.githubusercontent.com/step-security/maintained-actions-assets/main/assets/maintained-action-banner.png)](https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions)
 
 [![Test](https://github.com/step-security/action-shfmt/workflows/Test/badge.svg)](https://github.com/step-security/action-shfmt/actions?query=workflow%3ATest)
 [![reviewdog](https://github.com/step-security/action-shfmt/workflows/reviewdog/badge.svg)](https://github.com/step-security/action-shfmt/actions?query=workflow%3Areviewdog)
