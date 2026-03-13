@@ -66,13 +66,23 @@ execute() {
   log_info "downloading from ${TARBALL_URL}"
   http_download "${TMPDIR}/${NAME}" "$TARBALL_URL"
 
-  # Download and verify checksum
-  CHECKSUM_URL="${GITHUB_DOWNLOAD}/${TAG}/sha256sums.txt"
-  log_info "downloading checksums from ${CHECKSUM_URL}"
-  http_download "${TMPDIR}/sha256sums.txt" "$CHECKSUM_URL"
-
-  log_info "verifying checksum for ${NAME}"
-  hash_sha256_verify "${TMPDIR}/${NAME}" "${TMPDIR}/sha256sums.txt"
+  # Verify checksum using GitHub API digest (native) or sha256sums.txt (legacy)
+  log_info "fetching digest from GitHub API for ${NAME}"
+  want_hash=$(github_asset_digest "${OWNER}/${REPO}" "${TAG}" "${NAME}")
+  if [ -n "$want_hash" ]; then
+    log_info "verifying checksum for ${NAME} using GitHub API digest"
+    got_hash=$(hash_sha256 "${TMPDIR}/${NAME}")
+    if [ "$want_hash" != "$got_hash" ]; then
+      log_crit "checksum mismatch for ${NAME}: expected ${want_hash}, got ${got_hash}"
+      exit 1
+    fi
+  else
+    CHECKSUM_URL="${GITHUB_DOWNLOAD}/${TAG}/sha256sums.txt"
+    log_info "downloading checksums from ${CHECKSUM_URL}"
+    http_download "${TMPDIR}/sha256sums.txt" "$CHECKSUM_URL"
+    log_info "verifying checksum for ${NAME}"
+    hash_sha256_verify "${TMPDIR}/${NAME}" "${TMPDIR}/sha256sums.txt"
+  fi
 
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   install "${TMPDIR}/${NAME}" "${BINDIR}/${BINARY}"
@@ -264,6 +274,17 @@ github_release() {
   version=$(echo "$json" | tr -s '\n' ' ' | sed 's/.*"tag_name":"//' | sed 's/".*//')
   test -z "$version" && return 1
   echo "$version"
+}
+github_asset_digest() {
+  owner_repo=$1
+  tag=$2
+  asset_name=$3
+  api_url="https://api.github.com/repos/${owner_repo}/releases/tags/${tag}"
+  json=$(http_copy "$api_url" "Accept:application/vnd.github+json")
+  test -z "$json" && return 1
+  digest=$(echo "$json" | jq -r ".assets[] | select(.name == \"${asset_name}\") | .digest // empty" 2>/dev/null | sed 's/^sha256://')
+  test -z "$digest" && return 1
+  echo "$digest"
 }
 hash_sha256() {
   TARGET=${1:-/dev/stdin}
